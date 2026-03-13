@@ -7,7 +7,6 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-	"golang.org/x/text/unicode/rangetable"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -106,18 +105,23 @@ func checkLowercaseStart(pass *analysis.Pass, msg string, pos token.Pos) {
     }
 }
 
+// Вспомогательная функция: проверка на числа и латиницу
+func isAllowedSymbol(r rune) bool {
+    return (r >= 'a' && r <= 'z') ||
+                     (r >= 'A' && r <= 'Z') ||
+                     (r >= '0' && r <= '9') || 
+                     r == ' ' || r == '.' || r == ',' || 
+                     r == ':' || r == ';' || r == '!' || r == '?' || 
+                     r == '-' || r == '(' || r == ')' || r == '/' || r == '\''
+}
+
 // Правило 2: только английский (проверка через unicode ranges)
 func checkEnglishOnly(pass *analysis.Pass, msg string, pos token.Pos) {
     // Разрешённые диапазоны: базовая латиница + знаки препинания + пробелы
-    allowed := rangetable.Merge(
-        unicode.BasicLatin,      // A-Z, a-z, 0-9, punctuation
-        unicode.Latin1Supplement, // расширенная латиница (опционально)
-    )
-    
-    for _, r := range msg {
-        if !unicode.In(r, allowed) && !unicode.IsSpace(r) {
-            // Если символ не в разрешённых диапазонах — вероятно, не английский
-            if unicode.Is(unicode.Cyrillic, r) || unicode.Is(unicode.Han, r) {
+    for _, symbol := range msg {
+        if !isAllowedSymbol(symbol) {
+            // Явно проверяем "запрещённые" скрипты
+            if (symbol >= 0x0400 && symbol <= 0x04FF) { // кириллица
                 pass.Reportf(pos, "log message should be in English only: %q", msg)
                 return
             }
@@ -126,32 +130,43 @@ func checkEnglishOnly(pass *analysis.Pass, msg string, pos token.Pos) {
 }
 
 // Правило 3: без спецсимволов и эмодзи
+// Правило 3: без спецсимволов и эмодзи
 func checkNoSpecialChars(pass *analysis.Pass, msg string, pos token.Pos) {
-    // Разрешаем: буквы, цифры, пробелы, базовая пунктуация .,:;!?-()
-    allowed := regexp.MustCompile(`^[a-zA-Z0-9\s\.\,\:\;\!\?\-\(\)\/\\']+$`)
-    
-    if !allowed.MatchString(msg) {
-        // Проверяем наличие эмодзи (диапазоны Unicode)
-        for _, r := range msg {
-            if unicode.In(r, unicode.Emoji) {
-                pass.Reportf(pos, "log message should not contain emoji: %q", msg)
-                return
-            }
-            // Спецсимволы: множественные !?..., символы @#$%^&*<>[]{}|=~`
-            if strings.ContainsAny(string(r), "!@#$%^&*<>[]{}|=~`") {
-                // Разрешаем одиночные !? в конце
-                if !strings.HasSuffix(msg, "!") && !strings.HasSuffix(msg, "?") {
-                    pass.Reportf(pos, "log message should not contain special characters: %q", msg)
-                    return
-                }
-            }
+    // 1. Проверка на эмодзи по диапазонам Unicode
+    for _, r := range msg {
+        // Основные диапазоны эмодзи
+        if isEmoji(r) {
+            pass.Reportf(pos, "log message should not contain emoji: %q", msg)
+            return
         }
     }
     
-    // Проверка на множественные знаки препинания
+    // 2. Проверка на запрещённые спецсимволы
+    // Разрешаем только: буквы, цифры, пробел, . , : ; - ( ) / '
+    forbidden := "!@#$%^&*<>[]{}|=~`\"+\\?"
+    for _, r := range msg {
+        if strings.ContainsRune(forbidden, r) {
+            pass.Reportf(pos, "log message should not contain special characters: %q", msg)
+            return
+        }
+    }
+    
+    // 3. Проверка на множественные знаки препинания: !!!, ???, ...
     if regexp.MustCompile(`[!?]{2,}|\.{3,}`).MatchString(msg) {
         pass.Reportf(pos, "log message should not contain repeated punctuation: %q", msg)
     }
+}
+
+// Вспомогательная функция: проверка на эмодзи по диапазонам
+func isEmoji(r rune) bool {
+    return (r >= 0x1F600 && r <= 0x1F64F) || // Emoticons
+           (r >= 0x1F300 && r <= 0x1F5FF) || // Misc Symbols and Pictographs
+           (r >= 0x1F680 && r <= 0x1F6FF) || // Transport and Map
+           (r >= 0x1F900 && r <= 0x1F9FF) || // Supplemental Symbols
+           (r >= 0x2600 && r <= 0x26FF) ||   // Misc symbols
+           (r >= 0x2700 && r <= 0x27BF) ||   // Dingbats
+           (r >= 0xFE00 && r <= 0xFE0F) ||   // Variation Selectors
+           (r >= 0x1F1E0 && r <= 0x1F1FF)    // Flags
 }
 
 // Правило 4: чувствительные данные

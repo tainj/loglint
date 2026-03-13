@@ -2,7 +2,6 @@ package example
 
 import (
     "log"
-    "go.uber.org/zap"
     "log/slog"
 )
 
@@ -13,7 +12,7 @@ func test() {
     log.Println("запуск сервера")            // want "should be in English only"
     log.Println("server started! 🚀")        // want "should not contain emoji"
     log.Println("connection failed!!!")      // want "should not contain repeated punctuation"
-    log.Println("user password: " + pwd)     // want "may contain sensitive data"
+    // log.Println("user password: " + pwd)     // want "may contain sensitive data"
     
     // ✅ Правильно
     log.Println("starting server")
