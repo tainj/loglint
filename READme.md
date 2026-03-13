@@ -1,11 +1,10 @@
-
 # loglint 🔍
 
 Линтер для анализа лог-записей в Go-проектах. Проверяет сообщения на соответствие стандартам качества и безопасности.
 
 ## ✨ Возможности
 
-Линтер проверяет 4 правила для вызовов `slog`, `zap`, `log`:
+Линтер проверяет 4 правила для вызовов `slog` и `zap`:
 
 | Правило | Описание | Пример ❌ | Пример ✅ |
 |---------|----------|-----------|-----------|
@@ -16,10 +15,10 @@
 
 ### Поддерживаемые логгеры
 
-- `log/slog`: `slog.Info()`, `slog.Error()`, etc.
-- `go.uber.org/zap`: `logger.Info()`, `zap.L().Error()`, `zap.S().Warnf()`, etc.
-- `log` (stdlib): `log.Println()`, `log.Printf()`, etc.
-- Любая переменная с методами `Info`/`Error`/`Warn`/`Debug`
+- **`log/slog`**: `slog.Info()`, `slog.Error()`, `slog.Warn()`, `slog.Debug()` (+f версии)
+- **`go.uber.org/zap`**: 
+  - Через переменную: `logger.Info()`, `logger.Errorf()`, etc.
+  - Глобальный: `zap.L().Info()`, `zap.S().Error()`, etc.
 
 ---
 
@@ -98,7 +97,7 @@ main.go:9:12: log message should not contain emoji: "server started 🚀"
 Настроен GitHub Actions с проверками:
 
 - `test` — unit-тесты анализатора
-- `demo-violations` — детектирование нарушений (ожидаемо падает)
+- `demo-violations` — детектирование нарушений
 - `demo-clean` — чистый код проходит без ошибок
 
 [![CI](https://github.com/tainj/loglint/actions/workflows/ci.yml/badge.svg)](https://github.com/tainj/loglint/actions/workflows/ci.yml)
@@ -126,7 +125,3 @@ main.go:9:12: log message should not contain emoji: "server started 🚀"
 ├── go.sum
 └── README.md
 ```
-
-## 📄 Лицензия
-
-MIT
