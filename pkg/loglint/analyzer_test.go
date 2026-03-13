@@ -1,12 +1,11 @@
-package loglint_test
+package loglint
 
 import (
     "testing"
-    "github.com/tainj/loglint/pkg/loglint"
     "golang.org/x/tools/go/analysis/analysistest"
 )
 
 func TestAnalyzer(t *testing.T) {
-    testdata := analysistest.TestData()
-    analysistest.Run(t, testdata, loglint.Analyzer, "example")
+    // "./src/example" — относительный путь от testdata/
+    analysistest.Run(t, analysistest.TestData(), Analyzer, "./src/example")
 }
