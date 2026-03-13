@@ -1,0 +1,16 @@
+# .golangci.example.yml
+# Пример использования loglint в другом проекте
+
+linters-settings:
+  custom:
+    loglint:
+      type: "module"
+      path: "github.com/tainj/loglint/pkg/loglint"
+      description: "Checks log messages for style and security rules"
+      original-url: "github.com/tainj/loglint"
+
+linters:
+  enable:
+    - loglint
+    - govet
+    - staticcheck

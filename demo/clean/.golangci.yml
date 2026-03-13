@@ -1,0 +1,9 @@
+linters-settings:
+  custom:
+    loglint:
+      type: "local"
+      path: "../../pkg/loglint"
+
+linters:
+  enable:
+    - loglint
